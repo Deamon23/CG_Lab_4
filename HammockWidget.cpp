@@ -2,37 +2,45 @@
 #include <QOpenGLShaderProgram>
 #include <QVector3D>
 
+// Конструктор класса HammockWidget
 HammockWidget::HammockWidget(QWidget *parent)
     : QOpenGLWidget(parent), slices(10), rotationAngle(0.0f), step(0.5f)
 {
-    connect(&timer, &QTimer::timeout, this, &HammockWidget::updateView); // Подключение таймера к слоту обновления вида
-    timer.start(1000 / 60); // Запуск таймера с частотой 60 FPS
+    // Подключение таймера к слоту обновления вида
+    connect(&timer, &QTimer::timeout, this, &HammockWidget::updateView);
+    // Запуск таймера с частотой 60 FPS
+    timer.start(1000 / 60);
 }
 
+// Деструктор класса HammockWidget
 HammockWidget::~HammockWidget()
 {
 }
 
+// Установка количества срезов
 void HammockWidget::setSlices(int slices)
 {
-    this->slices = slices; // Установка количества срезов
+    this->slices = slices;
     generateSurface(); // Генерация новой поверхности
     update(); // Обновление вида
 }
 
+// Установка угла вращения
 void HammockWidget::setRotation(float angle)
 {
-    rotationAngle = angle; // Установка угла вращения
+    rotationAngle = angle;
     update(); // Обновление вида
 }
 
+// Установка шага сетки
 void HammockWidget::setStep(float step)
 {
-    this->step = step; // Установка шага сетки
+    this->step = step;
     generateSurface(); // Генерация новой поверхности
     update(); // Обновление вида
 }
 
+// Инициализация OpenGL
 void HammockWidget::initializeGL()
 {
     initializeOpenGLFunctions(); // Инициализация функций OpenGL
@@ -41,20 +49,24 @@ void HammockWidget::initializeGL()
     generateSurface(); // Генерация поверхности
 }
 
+// Обработка изменения размера окна
 void HammockWidget::resizeGL(int w, int h)
 {
     glViewport(0, 0, w, h); // Установка области просмотра
 }
 
+// Отрисовка сцены
 void HammockWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Очистка экрана и буфера глубины
 
+    // Создание матрицы проекции
     QMatrix4x4 projection;
     projection.perspective(45.0f, float(width()) / height(), 0.1f, 100.0f); // Установка перспективной проекции
     projection.translate(0, 0, -15); // Перемещение камеры назад
     projection.rotate(rotationAngle, 0, 1, 0); // Вращение только по оси Y
 
+    // Создание и компиляция шейдерной программы
     QOpenGLShaderProgram program;
     program.addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
         attribute vec3 vertexPosition;
@@ -77,23 +89,29 @@ void HammockWidget::paintGL()
     program.enableAttributeArray("vertexPosition"); // Включение атрибута вершин
     program.setAttributeArray("vertexPosition", vertices.constData(), 3); // Установка данных вершин
 
-    glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, indices.constData()); // Отрисовка линий
+    // Используем режим отрисовки линий
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.constData()); // Отрисовка треугольников
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Возвращение режима заполнения
 
     program.disableAttributeArray("vertexPosition"); // Отключение атрибута вершин
     program.release(); // Освобождение шейдерной программы
 }
 
+// Обновление вида
 void HammockWidget::updateView()
 {
     rotationAngle += 1.0f; // Увеличение угла вращения
     update(); // Обновление вида
 }
 
+// Генерация поверхности
 void HammockWidget::generateSurface()
 {
     vertices.clear(); // Очистка вершин
     indices.clear(); // Очистка индексов
 
+    // Генерация вершин поверхности
     for (float x = -2.0f; x <= 2.0f; x += step) {
         for (float z = -2.0f; z <= 2.0f; z += step) {
             float y = x * x + z * z; // Вычисление координаты y
@@ -101,13 +119,15 @@ void HammockWidget::generateSurface()
         }
     }
 
-    int numVerticesPerRow = (4.0f / step) + 1; // Количество вершин в строке
+    // Количество вершин в строке
+    int numVerticesPerRow = (4.0f / step) + 1;
 
+    // Генерация индексов для треугольников
     for (int i = 0; i < numVerticesPerRow - 1; ++i) {
         for (int j = 0; j < numVerticesPerRow - 1; ++j) {
             int start = i * numVerticesPerRow + j;
-            indices << start << start + 1; // Индексы для линий по оси X
-            indices << start << start + numVerticesPerRow; // Индексы для линий по оси Z
+            indices << start << start + 1 << start + numVerticesPerRow;
+            indices << start + 1 << start + numVerticesPerRow << start + numVerticesPerRow + 1;
         }
     }
 }
