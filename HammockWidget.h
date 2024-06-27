@@ -5,6 +5,7 @@
 #include <QOpenGLFunctions>
 #include <QTimer>
 #include <QVector>
+#include <QMatrix4x4>
 
 class HammockWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -14,7 +15,6 @@ public:
     explicit HammockWidget(QWidget *parent = nullptr);
     ~HammockWidget();
 
-    void setSlices(int slices);
     void setRotation(float angle);
     void setStep(float step);
 
@@ -27,13 +27,13 @@ private slots:
     void updateView();
 
 private:
-    QTimer timer;
-    int slices;
-    float rotationAngle;
-    float step;
-    QVector<float> vertices;
-    QVector<unsigned int> indices;
     void generateSurface();
+
+    float rotationAngle; // Угол вращения
+    float step; // Шаг сетки
+    QTimer timer; // Таймер для обновления вида
+    QVector<float> vertices; // Вершины поверхности
+    QVector<unsigned int> indices; // Индексы для треугольников
 };
 
 #endif // HAMMOCKWIDGET_H

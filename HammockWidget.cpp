@@ -1,10 +1,10 @@
 #include "hammockwidget.h"
 #include <QOpenGLShaderProgram>
 #include <QVector3D>
-
+#include <QDebug>
 // Конструктор класса HammockWidget
 HammockWidget::HammockWidget(QWidget *parent)
-    : QOpenGLWidget(parent), slices(10), rotationAngle(0.0f), step(0.5f)
+    : QOpenGLWidget(parent), rotationAngle(0.0f), step(0.5f)
 {
     // Подключение таймера к слоту обновления вида
     connect(&timer, &QTimer::timeout, this, &HammockWidget::updateView);
@@ -15,29 +15,6 @@ HammockWidget::HammockWidget(QWidget *parent)
 // Деструктор класса HammockWidget
 HammockWidget::~HammockWidget()
 {
-}
-
-// Установка количества срезов
-void HammockWidget::setSlices(int slices)
-{
-    this->slices = slices;
-    generateSurface(); // Генерация новой поверхности
-    update(); // Обновление вида
-}
-
-// Установка угла вращения
-void HammockWidget::setRotation(float angle)
-{
-    rotationAngle = angle;
-    update(); // Обновление вида
-}
-
-// Установка шага сетки
-void HammockWidget::setStep(float step)
-{
-    this->step = step;
-    generateSurface(); // Генерация новой поверхности
-    update(); // Обновление вида
 }
 
 // Инициализация OpenGL
@@ -63,7 +40,7 @@ void HammockWidget::paintGL()
     // Создание матрицы проекции
     QMatrix4x4 projection;
     projection.perspective(45.0f, float(width()) / height(), 0.1f, 100.0f); // Установка перспективной проекции
-    projection.translate(0, 0, -15); // Перемещение камеры назад
+    projection.translate(0, 0, -20); // Перемещение камеры назад
     projection.rotate(rotationAngle, 0, 1, 0); // Вращение только по оси Y
 
     // Создание и компиляция шейдерной программы
@@ -111,16 +88,20 @@ void HammockWidget::generateSurface()
     vertices.clear(); // Очистка вершин
     indices.clear(); // Очистка индексов
 
+    // Диапазон от -2 до 2
+    float range = 4.0f;
+
     // Генерация вершин поверхности
     for (float x = -2.0f; x <= 2.0f; x += step) {
         for (float z = -2.0f; z <= 2.0f; z += step) {
-            float y = x * x + z * z; // Вычисление координаты y
-            vertices << x << y << z; // Добавление вершины
+            float y = x * x + z * z;
+            vertices << x << y << z; // Добавление вершин
         }
     }
 
     // Количество вершин в строке
-    int numVerticesPerRow = (4.0f / step) + 1;
+    int numVerticesPerRow = (range / step) + 1;
+    //  qDebug() << numVerticesPerRow;
 
     // Генерация индексов для треугольников
     for (int i = 0; i < numVerticesPerRow - 1; ++i) {
